@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kreeft Free</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            display: flex;
+            height: 100vh;
+            background-color: #f8f9fa;
+            position: relative;
+            color: #2d3748;
+        }
+
+        /* Pantallas de Bienvenida (Modal flotante) */
+        .modal-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(45, 55, 72, 0.9);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .auth-box {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            text-align: center;
+            width: 90%;
+            max-width: 460px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border-top: 6px solid #2f855a;
+        }
+
+        .auth-box h1 {
+            color: #2d3748;
+            margin-bottom: 12px;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .auth-box p {
+            color: #718096;
+            margin-bottom: 25px;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        /* Botones de Rol */
+        .btn-role {
+            display: block;
+            width: 100%;
+            padding: 18px 20px;
+            margin: 15px 0;
+            font-size: 1.15rem;
+            font-weight: 700;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .btn-role:active {
+            transform: scale(0.98);
+        }
+
+        .btn-comprar { background: #2b6cb0; color: white; }
+        .btn-comprar:hover { background: #2c5282; }
+        .btn-vender { background: #2f855a; color: white; }
+        .btn-vender:hover { background: #22543d; }
+
+        /* Panel Lateral */
+        #sidebar {
+            width: 380px;
+            background: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.05);
+            z-index: 1000;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 15px;
+        }
+
+        .header h2 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge.comprar { background: #2b6cb0; }
+        .badge.vender { background: #2f855a; }
+
+        .panel-activos {
+            display: inline-flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            gap: 10px;
+            background: #edf2f7;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2d3748;
+            margin: 0 auto 18px;
+            min-width: 170px;
+            max-width: 220px;
+        }
+
+        .activo-label {
+            color: #4a5568;
+            font-weight: 600;
+        }
+
+        .activo-valor {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            min-height: 32px;
+            padding: 0 8px;
+            background: #2f855a;
+            color: white;
+            border-radius: 8px;
+            font-size: 0.9rem;
+        }
+
+        /* NUEVO CONTADOR LLAMATIVO */
+        .contenedor-countdown {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border: 1px solid #4a5568;
+        }
+
+        .countdown-titulo {
+            font-size: 0.9rem;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            color: #ed8936;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .countdown-reloj {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            font-family: monospace;
+        }
+
+        .countdown-bloque {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .countdown-numero {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #fff;
+            background: rgba(255,255,255,0.08);
+            padding: 4px 10px;
+            border-radius: 6px;
+            min-width: 55px;
+        }
+
+        .countdown-etiqueta {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            color: #a0aec0;
+            margin-top: 4px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        /* Alerta de código generado */
+        #codigo-alerta {
+            background: #fffaf0;
+            border: 1px solid #feebc8;
+            border-left: 4px solid #dd6b20;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+        }
+        #codigo-alerta p { font-size: 0.8rem; color: #7b341e; margin-bottom: 4px; }
+        #codigo-alerta strong { font-size: 1.1rem; color: #dd6b20; letter-spacing: 1px; }
+
+        /* Formulario de registro (Vendedor) */
+        #poke-form {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        #poke-form h3 {
+            font-size: 1rem;
+            margin-bottom: 12px;
+            color: #2d3748;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .input-group input, .input-group textarea, .input-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            font-size: 0.95rem;
+            background-color: white;
+            color: #2d3748;
+        }
+
+        .direccion-container {
+            display: flex;
+            gap: 6px;
+        }
+        .direccion-container input { width: 65%; }
+        .direccion-container button { 
+            width: 35%; 
+            background: #4a5568; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            font-weight: 700; 
+            font-size: 0.85rem; 
+            cursor: pointer;
+            padding: 10px 5px;
+        }
+        .direccion-container button:hover { background: #2d3748; }
+
+        .contacto-container {
+            display: flex;
+            gap: 6px;
+        }
+
+        .contacto-container select { 
+            width: 40%; 
+            font-weight: 600;
+        }
+        .contacto-container input { width: 60%; }
+
+        button.btn-guardar {
+            width: 100%;
+            background: #2f855a;
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.2s;
+            margin-top: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button.btn-guardar:hover { background: #22543d; }
+
+        button.btn-cambiar-modo {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            color: #4a5568;
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 8px;
+            font-weight: 600;
+            width: 100%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        button.btn-cambiar-modo:hover { background: #e2e8f0; }
+
+        /* Lista de Puntos */
+        .lista-titulo {
+            font-size: 1rem;
+            color: #4a5568;
+            margin-bottom: 12px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 6px;
+            font-weight: 700;
+        }
+
+        #puntos-list {
+            list-style: none;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        #puntos-list li {
+            padding: 15px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            position: relative;
+            transition: border-color 0.2s, background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        #puntos-list li:hover {
+            background: #f7fafc;
+            border-color: #cbd5e0;
+        }
+
+        #puntos-list li.punto-bloqueado {
+            background: #e2e8f0 !important;
+            border-color: #cbd5e0 !important;
+            opacity: 0.7;
+        }
+        #puntos-list li.punto-bloqueado h4, 
+        #puntos-list li.punto-bloqueado p {
+            color: #718096 !important;
+            text-decoration: line-through;
+        }
+
+        #puntos-list h4 {
+            color: #2d3748;
+            font-size: 1rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+            padding-right: 60px;
+        }
+
+        #puntos-list p {
+            font-size: 0.9rem;
+            color: #4a5568;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .info-contacto {
+            font-size: 0.85rem !important;
+            font-weight: bold;
+            color: white !important;
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 5px;
+        }
+
+        .contact-whatsapp { background: #25D366; }
+        .contact-telegram { background: #0088cc; }
+        .contact-instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+        .contact-x { background: #000000; }
+        .contact-oculto { background: #718096; }
+
+        .btn-ocultar {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 6px 10px;
+            color: #4a5568;
+            font-weight: 600;
+            display: none;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .btn-ocultar:hover { background: #e2e8f0; color: #e53e3e; }
+        
+        .btn-desbloquear {
+            background: #4a5568 !important;
+            color: white !important;
+            margin-top: 8px;
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-desbloquear:hover { background: #2d3748 !important; }
+
+        .custom-popup-content b {
+            color: #2d3748;
+            font-size: 0.95rem;
+        }
+        .custom-popup-content p {
+            margin: 8px 0;
+            font-size: 0.9rem;
+            line-height: 1.4;
+        }
+
+        #map {
+            flex-grow: 1;
+            height: 100%;
+        }
+
+        /* Modal de Contacto */
+        .modal-contacto {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-contacto.activo {
+            display: flex;
+        }
+
+        .modal-contacto-contenido {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-contacto-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid #edf2f7;
+            padding-bottom: 12px;
+        }
+
+        .modal-contacto-header h3 {
+            color: #2d3748;
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+            font-weight: 700;
+        }
+
+        .modal-contacto-header p {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .modal-contacto-mensaje {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 18px;
+            font-size: 0.95rem;
+            color: #2d3748;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .modal-contacto-info {
+            background: #f0f4ff;
+            border-left: 4px solid #2b6cb0;
+            padding: 14px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            color: #2d3748;
+        }
+
+        .modal-contacto-info strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #2b6cb0;
+        }
+
+        .modal-contacto-botones {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn-copiar {
+            flex: 1;
+            background: #2f855a;
+            color: white;
+            border: none;
+            padding: 15px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-copiar:hover { background: #22543d; }
+        .btn-copiar.copiado { background: #4a5568; }
+
+        .btn-cerrar-modal {
+            flex: 1;
+            background: #e2e8f0;
+            color: #4a5568;
+            border: none;
+            padding: 15px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: background 0.2s;
+        }
+        .btn-cerrar-modal:hover { background: #cbd5e0; }
+
+        .btn-contactar {
+            width: 100%;
+            background: #2b6cb0;
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            font-size: 0.95rem;
+            margin-top: 12px;
+            transition: background 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-contactar:hover { background: #2c5282; }
+
+        #panel-vendedor {
+            background: white;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        #panel-vendedor h3 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #2d3748;
+            border-bottom: 1px solid #edf2f7;
+            padding-bottom: 5px;
+            font-weight: 700;
+        }
+
+        .tabla-puestos {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            text-align: left;
+        }
+
+        .tabla-puestos th, .tabla-puestos td {
+            padding: 10px 6px;
+            border-bottom: 1px solid #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .tabla-puestos th {
+            color: #718096;
+            font-weight: 700;
+        }
+
+        .codigo-seguridad {
+            background: #f0f4ff;
+            color: #2b6cb0;
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+
+        .acciones-panel {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-accion {
+            padding: 8px 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            transition: transform 0.1s;
+        }
+        .btn-accion:active { transform: scale(0.95); }
+        .btn-ver { background: #e2e8f0; color: #2d3748; }
+        .btn-ver:hover { background: #cbd5e0; }
+        .btn-editar { background: #feebc8; color: #c05621; }
+        .btn-editar:hover { background: #fbd38d; }
+        .btn-borrar { background: #fed7d7; color: #9b2c2c; }
+        .btn-borrar:hover { background: #feb2b2; }
+
+        /* Notificación Toast */
+        .toast-notificacion {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: linear-gradient(135deg, #2f855a 0%, #22543d 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            z-index: 10001;
+            animation: slideInUp 0.4s ease-out;
+            max-width: 400px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideOutDown {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(30px); }
+        }
+
+        .toast-notificacion.saliendo {
+            animation: slideOutDown 0.4s ease-in forwards;
+        }
+
+        .creditos-autor {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #718096;
+            text-align: center;
+            padding-top: 12px;
+            border-top: 1px solid #edf2f7;
+            letter-spacing: 0.2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="welcome-screen" class="modal-screen">
+        <div class="auth-box">
+            <h1>Panel de Control</h1>
+            <p id="welcome-user-text">Bienvenido al Marketplace de Granada. Selecciona tu perfil de actividad para comenzar.</p>
+            <button class="btn-role btn-comprar" onclick="seleccionarRol('comprar')">Consultar Puntos de Venta (Comprar)</button>
+            <button class="btn-role btn-vender" onclick="seleccionarRol('vender')">Registrar Nuevo Puesto (Vender)</button>
+        </div>
+    </div>
+
+    <div id="sidebar">
+        <div class="header">
+            <h2>Kreeft Free</h2>
+            <div id="rol-badge" class="badge"></div>
+            <p id="instrucciones-rol" style="font-size: 0.85rem; color: #718096; line-height: 1.4;"></p>
+            <button class="btn-cambiar-modo" onclick="reiniciarPantalla()">Cambiar perfil de sesión</button>
+        </div>
+
+        <div class="panel-activos">
+            <span class="activo-label">Usuarios activos</span>
+            <span class="activo-valor">31</span>
+        </div>
+
+        <div class="contenedor-countdown">
+            <div class="countdown-titulo">⏰ Fin del Corpus</div>
+            <div class="countdown-reloj">
+                <div class="countdown-bloque">
+                    <span class="countdown-numero" id="timer-horas">168</span>
+                    <span class="countdown-etiqueta">Horas</span>
+                </div>
+                <div class="countdown-bloque">
+                    <span class="countdown-numero" id="timer-minutos">00</span>
+                    <span class="countdown-etiqueta">Min</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="codigo-alerta">
+            <p>⚠️ <strong>¡ANOTA ESTE CÓDIGO!</strong> Lo necesitarás obligatoriamente para dar de baja o borrar este punto en el futuro:</p>
+            <strong id="codigo-generado-txt">KR-XXXX</strong>
+        </div>
+
+        <form id="poke-form">
+            <h3>Registrar Punto de Distribución</h3>
+            <div class="input-group">
+                <label>Dirección / Ubicación del punto</label>
+                <div class="direccion-container">
+                    <input type="text" id="calle-input" placeholder="Escribe calle o haz clic en mapa" required>
+                    <button type="button" onclick="buscarDireccionTexto()">Buscar</button>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label>Elige un método de contacto</label>
+                <select id="tipo-contacto" onchange="actualizarCampoContacto()" required>
+                    <option value="" disabled selected>-- Selecciona opción --</option>
+                    <option value="Instagram" style="color: #dc2743; font-weight: bold;">📷 Instagram</option>
+                    <option value="X (Twitter)" style="color: #000000; font-weight: bold;">𝕏 X (Twitter)</option>
+                    <option value="WhatsApp" style="color: #25D366; font-weight: bold;">💬 WhatsApp</option>
+                    <option value="Telegram" style="color: #0088cc; font-weight: bold;">✈️ Telegram</option>
+                </select>
+            </div>
+
+            <div class="input-group" id="contacto-input-group" style="display: none;">
+                <label id="contacto-label">Ingresa tu información</label>
+                <input type="text" id="dato-contacto" placeholder="">
+            </div>
+
+            <div class="input-group">
+                <label>Descripción de existencias y oferta</label>
+                <textarea id="desc-input" rows="3" placeholder="Detalle aquí las colecciones, sobres o material disponible..." required></textarea>
+            </div>
+            <button type="submit" class="btn-guardar">Dar de alta ubicación</button>
+        </form>
+
+        <div id="panel-vendedor">
+            <h3>Panel de tus Puestos</h3>
+            <table class="tabla-puestos">
+                <thead>
+                    <tr>
+                        <th>Dirección</th>
+                        <th>Código</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-puestos-body"></tbody>
+            </table>
+        </div>
+
+        <h3 class="lista-titulo">Puntos Registrados</h3>
+        <ul id="puntos-list"></ul>
+        <p class="creditos-autor">Creador: DoroBby Granada</p>
+    </div>
+
+    <div id="map"></div>
+
+    <div id="modal-contacto" class="modal-contacto">
+        <div class="modal-contacto-contenido">
+            <div class="modal-contacto-header">
+                <h3>Enviar Mensaje</h3>
+                <p>Copia el mensaje y contacta directamente</p>
+            </div>
+
+            <div class="modal-contacto-mensaje" id="mensaje-contacto"></div>
+
+            <div class="modal-contacto-info">
+                <strong>📱 Contacta por:</strong>
+                <div id="info-contacto-vendedor" class="contacto-badge"></div>
+            </div>
+
+            <div class="modal-contacto-botones">
+                <button class="btn-copiar" id="btn-copiar-mensaje" onclick="copiarMensaje()">📋 Copiar Mensaje</button>
+                <button class="btn-cerrar-modal" onclick="cerrarModalContacto()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const map = L.map('map').setView([37.1773, -3.5986], 14);
+        
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        let puntosVenta = JSON.parse(localStorage.getItem('puntosPokemonV5')) || [];
+        let puntosOcultos = JSON.parse(localStorage.getItem('puntosOcultosKreeft')) || [];
+        
+        let coordenadasSeleccionadas = null;
+        let markersLayer = L.layerGroup().addTo(map);
+        let tempMarker = null;
+        let rolActual = null;
+        let marcadoresActivos = {};
+
+        // LÓGICA DEL TEMPORIZADOR DE 7 DÍAS EN HORAS Y MINUTOS
+        function inicializarContador7Dias() {
+            let tiempoMeta = localStorage.getItem('fechaMetaCorpusV5');
+            
+            if (!tiempoMeta) {
+                // Si no existe, seteamos 7 días exactos a partir de este instante
+                const sieteDiasEnMilisegundos = 7 * 24 * 60 * 60 * 1000;
+                tiempoMeta = Date.now() + sieteDiasEnMilisegundos;
+                localStorage.setItem('fechaMetaCorpusV5', tiempoMeta);
+            }
+
+            function actualizarReloj() {
+                const ahora = Date.now();
+                const diferencia = tiempoMeta - ahora;
+
+                if (diferencia <= 0) {
+                    document.getElementById('timer-horas').textContent = "00";
+                    document.getElementById('timer-minutos').textContent = "00";
+                    clearInterval(intervaloContador);
+                    return;
+                }
+
+                // Cálculo puro enfocado en conservar y mostrar Horas Totales y Minutos restantes
+                const totalHoras = Math.floor(diferencia / (1000 * 60 * 60));
+                const minutosRestantes = Math.floor((diferencia % (1000 * 60 * 60)) / (1000 * 60));
+
+                // Formateo visual dinámico con ceros a la izquierda
+                document.getElementById('timer-horas').textContent = totalHoras.toString().padStart(2, '0');
+                document.getElementById('timer-minutos').textContent = minutosRestantes.toString().padStart(2, '0');
+            }
+
+            actualizarReloj();
+            const intervaloContador = setInterval(actualizarReloj, 60000); // Refresco optimizado por minuto
+        }
+
+        function mostrarToast(mensaje, codigo = null) {
+            const container = document.createElement('div');
+            container.className = 'toast-notificacion';
+            
+            if (codigo) {
+                container.innerHTML = `
+                    <span style="font-size: 1.5rem;">✅</span>
+                    <div>
+                        <div>${mensaje}</div>
+                        <div style="font-size: 0.85rem; margin-top: 8px; color: #e6fffa;">Código: <span style="font-family: monospace; letter-spacing: 1px;">${codigo}</span></div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `<span style="font-size: 1.5rem;">✅</span> <div>${mensaje}</div>`;
+            }
+            
+            document.body.appendChild(container);
+            
+            setTimeout(() => {
+                container.classList.add('saliendo');
+                setTimeout(() => container.remove(), 400);
+            }, 4000);
+        }
+
+        function obtenerClaseRedSocial(tipo) {
+            switch(tipo) {
+                case 'WhatsApp': return 'contact-whatsapp';
+                case 'Telegram': return 'contact-telegram';
+                case 'Instagram': return 'contact-instagram';
+                case 'X (Twitter)': return 'contact-x';
+                default: return '';
+            }
+        }
+
+        function generarCodigoSeguridad() {
+            const caracteres = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; 
+            let codigo = 'KR-';
+            for (let i = 0; i < 4; i++) {
+                codigo += caracteres.charAt(Math.floor(Math.random() * caracteres.length));
+            }
+            return codigo;
+        }
+
+        function actualizarCampoContacto() {
+            const tipoContacto = document.getElementById('tipo-contacto').value;
+            const inputGroup = document.getElementById('contacto-input-group');
+            const label = document.getElementById('contacto-label');
+            const input = document.getElementById('dato-contacto');
+
+            if (!tipoContacto) {
+                inputGroup.style.display = 'none';
+                return;
+            }
+
+            inputGroup.style.display = 'block';
+            input.value = '';
+
+            switch(tipoContacto) {
+                case 'Instagram':
+                    label.textContent = '👤 Nombre de usuario en Instagram';
+                    input.type = 'text';
+                    input.placeholder = 'ej: @tu_usuario_aqui';
+                    break;
+                case 'X (Twitter)':
+                    label.textContent = '👤 Nombre de usuario en X (Twitter)';
+                    input.type = 'text';
+                    input.placeholder = 'ej: @tu_usuario_aqui';
+                    break;
+                case 'WhatsApp':
+                    label.textContent = '📱 Teléfono WhatsApp';
+                    input.type = 'tel';
+                    input.placeholder = 'ej: 600000000';
+                    break;
+                case 'Telegram':
+                    label.textContent = '📱 Teléfono o Alias Telegram';
+                    input.type = 'text';
+                    input.placeholder = 'ej: @AliasOtelefono';
+                    break;
+            }
+        }
+
+        function seleccionarRol(rol) {
+            rolActual = rol;
+            document.getElementById('welcome-screen').style.display = 'none';
+            document.getElementById('codigo-alerta').style.display = 'none'; 
+            
+            const badge = document.getElementById('rol-badge');
+            const instrucciones = document.getElementById('instrucciones-rol');
+            const formulario = document.getElementById('poke-form');
+            const panelVendedor = document.getElementById('panel-vendedor');
+
+            if (rol === 'comprar') {
+                badge.textContent = "Consulta / Comprador";
+                badge.className = "badge comprar";
+                instrucciones.textContent = "Explore el mapa o la lista lateral. Puede ocultar los puntos que no le interesen pulsando el botón de cada tarjeta.";
+                formulario.style.display = 'none';
+                panelVendedor.style.display = 'none';
+            } else {
+                badge.textContent = "Registro / Vendedor";
+                badge.className = "badge vender";
+                instrucciones.textContent = "Escriba la dirección exacta y pulse 'Buscar', o asigne una ubicación en el mapa haciendo clic sobre él.";
+                formulario.style.display = 'block';
+                panelVendedor.style.display = 'block';
+            }
+            renderizarPuntos();
+        }
+
+        function reiniciarPantalla() {
+            document.getElementById('welcome-screen').style.display = 'flex';
+        }
+
+        map.on('click', function(e) {
+            if (rolActual !== 'vender') return;
+
+            const lat = e.latlng.lat;
+            const lng = e.latlng.lng;
+            coordenadasSeleccionadas = [lat, lng];
+
+            document.getElementById('calle-input').value = "Consultando base de datos cartográfica...";
+
+            if (tempMarker) map.removeLayer(tempMarker);
+            tempMarker = L.marker([lat, lng]).addTo(map);
+
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.display_name) {
+                        const calleCorta = data.address.road || data.address.pedestrian || data.display_name.split(',')[0];
+                        const numero = data.address.house_number ? `, Nº ${data.address.house_number}` : '';
+                        document.getElementById('calle-input').value = `${calleCorta}${numero}`;
+                    } else {
+                        document.getElementById('calle-input').value = `Ubicación fijada en [${lat.toFixed(4)}, ${lng.toFixed(4)}]`;
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('calle-input').value = `Punto fijado (${lat.toFixed(4)})`;
+                });
+        });
+
+        function buscarDireccionTexto() {
+            const direccionTexto = document.getElementById('calle-input').value.trim();
+            if (!direccionTexto || direccionTexto === "Consultando base de datos cartográfica...") {
+                alert("Por favor, introduce primero una calle válida.");
+                return;
+            }
+
+            const urlBúsqueda = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(direccionTexto + ", Granada, España")}&limit=1`;
+
+            fetch(urlBúsqueda)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const lat = parseFloat(data[0].lat);
+                        const lng = parseFloat(data[0].lon);
+                        coordenadasSeleccionadas = [lat, lng];
+
+                        map.setView([lat, lng], 16);
+                        if (tempMarker) map.removeLayer(tempMarker);
+                        tempMarker = L.marker([lat, lng]).addTo(map);
+                    } else {
+                        alert("No se ha podido localizar esa calle en Granada. Revisa el nombre o márcala directamente clicando en el mapa.");
+                    }
+                })
+                .catch(() => {
+                    alert("Error en el servidor cartográfico al procesar la dirección.");
+                });
+        }
+
+        document.getElementById('poke-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            if (!coordenadasSeleccionadas) {
+                alert("Operación denegada: Debe marcar un punto geográfico válido usando el mapa o el botón 'Buscar'.");
+                return;
+            }
+
+            const codigoSeguridad = generarCodigoSeguridad();
+
+            const nuevoPunto = {
+                id: Date.now(),
+                calle: document.getElementById('calle-input').value,
+                tipoContacto: document.getElementById('tipo-contacto').value,
+                datoContacto: document.getElementById('dato-contacto').value,
+                descripcion: document.getElementById('desc-input').value,
+                lat: coordenadasSeleccionadas[0],
+                lng: coordenadasSeleccionadas[1],
+                codigo: codigoSeguridad 
+            };
+
+            puntosVenta.push(nuevoPunto);
+            localStorage.setItem('puntosPokemonV5', JSON.stringify(puntosVenta));
+
+            mostrarToast('Establecido con éxito', codigoSeguridad);
+            
+            const boxAlerta = document.getElementById('codigo-alerta');
+            document.getElementById('codigo-generado-txt').textContent = codigoSeguridad;
+            boxAlerta.style.display = 'block';
+
+            document.getElementById('poke-form').reset();
+            document.getElementById('contacto-input-group').style.display = 'none';
+            if (tempMarker) map.removeLayer(tempMarker);
+            coordenadasSeleccionadas = null;
+
+            renderizarPuntos();
+        });
+
+        window.alternarOcultarPunto = function(event, id) {
+            event.stopPropagation();
+            const index = puntosOcultos.indexOf(id);
+            if (index === -1) {
+                puntosOcultos.push(id); 
+            } else {
+                puntosOcultos.splice(index, 1); 
+            }
+            localStorage.setItem('puntosOcultosKreeft', JSON.stringify(puntosOcultos));
+            renderizarPuntos();
+        };
+
+        window.verPuestoPanel = function(id) {
+            const punto = puntosVenta.find(p => p.id === id);
+            if (!punto) return;
+            const pass = prompt("Introduce el código KR de seguridad para VER los detalles completos:");
+            if (pass === punto.codigo) {
+                alert(`--- DATOS COMPLETO DEL PUESTO ---\n📍 Dirección: ${punto.calle}\n📝 Descripción: ${punto.descripcion}\n🔗 Contacto: [${punto.tipoContacto}] ${punto.datoContacto}\n🔑 Código de Recuperación: ${punto.codigo}`);
+            } else if (pass !== null) {
+                alert("❌ Código incorrecto. Acceso denegado.");
+            }
+        };
+
+        window.editarPuestoPanel = function(id) {
+            const punto = puntosVenta.find(p => p.id === id);
+            if (!punto) return;
+            const pass = prompt("Introduce el código KR de seguridad para EDITAR este puesto:");
+            if (pass === punto.codigo) {
+                const nuevaDesc = prompt("Nueva descripción de las existencias:", punto.descripcion);
+                const nuevoDato = prompt(`Nuevo identificador de contacto para ${punto.tipoContacto}:`, punto.datoContacto);
+                
+                if (nuevaDesc !== null && nuevaDesc.trim() !== "") punto.descripcion = nuevaDesc;
+                if (nuevoDato !== null && nuevoDato.trim() !== "") punto.datoContacto = nuevoDato;
+                
+                localStorage.setItem('puntosPokemonV5', JSON.stringify(puntosVenta));
+                mostrarToast('¡Puesto actualizado con éxito!');
+                renderizarPuntos();
+            } else if (pass !== null) {
+                alert("❌ Código incorrecto. Modificación denegada.");
+            }
+        };
+
+        window.eliminarPuestoPanel = function(id) {
+            const punto = puntosVenta.find(p => p.id === id);
+            if (!punto) return;
+            const pass = prompt("⚠️ ATENCIÓN: Introduce el código KR de seguridad para BORRAR definitivamente este punto:");
+            if (pass === punto.codigo) {
+                puntosVenta = puntosVenta.filter(p => p.id !== id);
+                localStorage.setItem('puntosPokemonV5', JSON.stringify(puntosVenta));
+                mostrarToast('El punto de venta ha sido eliminado del sistema');
+                renderizarPuntos();
+            } else if (pass !== null) {
+                alert("❌ Código incorrecto. Operación de borrado cancelada.");
+            }
+        };
+
+        function renderizarPanelVendedor() {
+            const tablaBody = document.getElementById('tabla-puestos-body');
+            tablaBody.innerHTML = '';
+            
+            if (puntosVenta.length === 0) {
+                tablaBody.innerHTML = '<tr><td colspan="3" style="text-align:center; color:#a0aec0;">No hay puestos registrados</td></tr>';
+                return;
+            }
+
+            puntosVenta.forEach(punto => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${punto.calle}">
+                        ${punto.calle}
+                    </td>
+                    <td>
+                        <span class="codigo-seguridad" title="Código para borrar este puesto">${punto.codigo}</span>
+                    </td>
+                    <td>
+                        <div class="acciones-panel">
+                            <button class="btn-accion btn-ver" onclick="verPuestoPanel(${punto.id})" title="Ver">👁️</button>
+                            <button class="btn-accion btn-editar" onclick="editarPuestoPanel(${punto.id})" title="Editar">✏️</button>
+                            <button class="btn-accion btn-borrar" onclick="eliminarPuestoPanel(${punto.id})" title="Borrar">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                tablaBody.appendChild(tr);
+            });
+        }
+
+        window.dispararContactoPopup = function(id){
+            abrirModalContacto(id);
+        };
+
+        function renderizarPuntos() {
+            markersLayer.clearLayers();
+            marcadoresActivos = {}; 
+            const listaUI = document.getElementById('puntos-list');
+            listaUI.innerHTML = '';
+
+            if (rolActual === 'vender') {
+                renderizarPanelVendedor();
+            }
+
+            puntosVenta.forEach(punto => {
+                const esOculto = puntosOcultos.includes(punto.id);
+                const claseColor = obtenerClaseRedSocial(punto.tipoContacto);
+
+                if (!esOculto) {
+                    let popupHTML = `
+                        <div class="custom-popup-content">
+                            <b>📍 Ubicación:</b> ${punto.calle}<br>
+                            <p>${punto.descripcion}</p>
+                            <span class="info-contacto ${claseColor}">💬 ${punto.tipoContacto}: ${punto.datoContacto}</span>
+                    `;
+
+                    if (rolActual === 'comprar') {
+                        popupHTML += `<button class="btn-contactar" onclick="dispararContactoPopup(${punto.id})">📞 Contactar</button>`;
+                    }
+
+                    popupHTML += `</div>`;
+
+                    const marker = L.marker([punto.lat, punto.lng]).bindPopup(popupHTML);
+                    marker.addTo(markersLayer);
+                    marcadoresActivos[punto.id] = marker;
+                }
+
+                const li = document.createElement('li');
+                
+                if (esOculto && rolActual === 'comprar') {
+                    li.className = "punto-bloqueado";
+                    li.innerHTML = `
+                        <h4>📍 Punto Ocultado</h4>
+                        <p style="font-style: italic;">Has bloqueado la visualización de este punto de venta.</p>
+                        <button class="btn-desbloquear" onclick="alternarOcultarPunto(event, ${punto.id})">🔓 Desbloquear / Mostrar</button>
+                    `;
+                } else {
+                    let btnContactar = '';
+                    if (rolActual === 'comprar') {
+                        btnContactar = `<button class="btn-contactar" onclick="abrirModalContacto(${punto.id})">📞 Contactar</button>`;
+                    }
+
+                    li.innerHTML = `
+                        <h4>📍 ${punto.calle}</h4>
+                        <p>${punto.descripcion}</p>
+                        <span class="info-contacto ${claseColor}">🔗 ${punto.tipoContacto}: ${punto.datoContacto}</span>
+                        ${btnContactar}
+                        <button class="btn-ocultar" style="display: ${rolActual === 'comprar' ? 'block' : 'none'}" onclick="alternarOcultarPunto(event, ${punto.id})" title="Ocultar este punto">👁️‍🗨️ Ocultar</button>
+                    `;
+
+                    li.addEventListener('click', () => {
+                        if (!esOculto) {
+                            map.setView([punto.lat, punto.lng], 16);
+                            if(marcadoresActivos[punto.id]) marcadoresActivos[punto.id].openPopup();
+                        }
+                    });
+                }
+
+                listaUI.appendChild(li);
+            });
+        }
+
+        let idPuntoContactoActual = null;
+
+        window.abrirModalContacto = function(id) {
+            const punto = puntosVenta.find(p => p.id === id);
+            if (!punto) return;
+
+            idPuntoContactoActual = id;
+            
+            const mensajeOriginal = `¡Hola! He visto tu punto de distribución en Kreeft Free.\nMe interesa lo que tienes en:\n${punto.calle}\n\nDescripción: ${punto.descripcion}\n\n¿Sigue disponible? ¡Gracias!`;
+            
+            document.getElementById('mensaje-contacto').textContent = mensajeOriginal;
+            
+            const badgeCont = document.getElementById('info-contacto-vendedor');
+            badgeCont.className = `contacto-badge info-contacto ${obtenerClaseRedSocial(punto.tipoContacto)}`;
+            badgeCont.textContent = `${punto.tipoContacto}: ${punto.datoContacto}`;
+            
+            document.getElementById('modal-contacto').classList.add('activo');
+            
+            const btnCopiar = document.getElementById('btn-copiar-mensaje');
+            btnCopiar.textContent = "📋 Copiar Mensaje";
+            btnCopiar.classList.remove('copiado');
+        };
+
+        window.cerrarModalContacto = function() {
+            document.getElementById('modal-contacto').classList.remove('activo');
+            idPuntoContactoActual = null;
+        };
+
+        window.copiarMensaje = function() {
+            const textoMensaje = document.getElementById('mensaje-contacto').textContent;
+            
+            navigator.clipboard.writeText(textoMensaje).then(() => {
+                const btnCopiar = document.getElementById('btn-copiar-mensaje');
+                btnCopiar.textContent = "✅ ¡Copiado al Portapapeles!";
+                btnCopiar.classList.add('copiado');
+            }).catch(err => {
+                alert("No se pudo copiar automáticamente: " + err);
+            });
+        };
+
+        // Inicializar tanto los puntos del mapa como el nuevo contador de cuenta atrás
+        renderizarPuntos();
+        inicializarContador7Dias();
+    </script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script type="module">
+    // 1. Importar las funciones necesarias de los SDKs de Firebase (v10+)
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 2. Tu configuración de Firebase (Copia y pega la que te dio la consola en el Paso 1)
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY_AQUÍ",
+        authDomain: "TU_PROYECTO.firebaseapp.com",
+        projectId: "TU_PROYECTO_ID",
+        storageBucket: "TU_PROYECTO.appspot.com",
+        messagingSenderId: "TU_SENDER_ID",
+        appId: "TU_APP_ID"
+    };
+
+    // 3. Inicializar Firebase y Firestore
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Referencia a la colección donde se guardarán los puestos de venta
+    const puestosRef = collection(db, "puestos");
+
+    // VARIABLES GLOBALES DEL MAPA (Asegúrate de usar las que ya tienes definidas en tu JS)
+    // Supongamos que tu mapa se llama 'map' y tus marcadores se guardan en un objeto o array
+    let marcadoresActivos = {}; 
+
+    // ==========================================
+    // FUNCIÓN: LEER LOS PUNTOS EN TIEMPO REAL
+    // ==========================================
+    // "onSnapshot" escucha cambios en la base de datos automáticamente. 
+    // Si un vendedor público agrega un puesto, aparecerá en el mapa de todos los compradores inmediatamente.
+    onSnapshot(puestosRef, (snapshot) => {
+        // Limpiar lista HTML actual y marcadores previos si es necesario
+        const listaHTML = document.getElementById('puntos-list');
+        if(listaHTML) listaHTML.innerHTML = "";
+        
+        // Remover marcadores viejos del mapa para no duplicar
+        Object.keys(marcadoresActivos).forEach(id => {
+            map.removeLayer(marcadoresActivos[id]);
+        });
+        marcadoresActivos = {};
+
+        let totalPuestos = 0;
+
+        snapshot.forEach((docSnap) => {
+            const punto = docSnap.data();
+            const idDoc = docSnap.id; // ID único generado por Firebase
+            totalPuestos++;
+
+            // A) AGREGAR MARCADOR AL MAPA DE LEAFLET
+            // Usamos las coordenadas guardadas en Firestore (lat, lng)
+            const marcador = L.marker([punto.lat, punto.lng]).addTo(map);
+            
+            // Personalizar el popup del marcador
+            const contenidoPopup = `
+                <div class="custom-popup-content">
+                    <b>${punto.nombre || 'Puesto de Venta'}</b>
+                    <p>${punto.descripcion || ''}</p>
+                    <button class="btn-contactar" onclick="abrirModalContacto('${idDoc}')">📱 Contactar</button>
+                </div>
+            `;
+            marcador.bindPopup(contenidoPopup);
+            marcadoresActivos[idDoc] = marcador;
+
+            // B) AGREGAR ITEM A LA LISTA LATERAL (SIDEBAR)
+            if (listaHTML) {
+                const li = document.createElement('li');
+                if (punto.bloqueado) li.className = "punto-bloqueado";
+                
+                li.innerHTML = `
+                    <h4>${punto.nombre}</h4>
+                    <p>${punto.direccion}</p>
+                    <span class="info-contacto ${obtenerClaseRedSocial(punto.tipoContacto)}">
+                        ${punto.tipoContacto}
+                    </span>
+                    <button class="btn-ocultar" onclick="eliminarPuesto('${idDoc}')">🗑️</button>
+                `;
+                
+                // Al hacer clic en la lista, enfocar el mapa en ese puesto
+                li.onclick = () => {
+                    map.setView([punto.lat, punto.lng], 16);
+                    marcador.openPopup();
+                };
+                
+                listaHTML.appendChild(li);
+            }
+        });
+
+        // Actualizar el panel contador de puestos activos en tu app
+        const contadorValor = document.querySelector('.panel-activos .activo-valor');
+        if (contadorValor) {
+            contadorValor.textContent = totalPuestos;
+        }
+    });
+
+    // ==========================================
+    // FUNCIÓN: GUARDAR UN NUEVO PUESTO (FORMULARIO VENDEDOR)
+    // ==========================================
+    window.guardarNuevoPuesto = async function(event) {
+        if(event) event.preventDefault(); // Prevenir recarga de página
+
+        // Capturar los valores de tus inputs actuales del formulario (#poke-form)
+        const nombreVal = document.getElementById('input-nombre').value;
+        const direccionVal = document.getElementById('input-direccion').value;
+        const descVal = document.getElementById('textarea-descripcion').value;
+        const tipoContactoVal = document.getElementById('select-contacto').value;
+        const datoContactoVal = document.getElementById('input-contacto-dato').value;
+
+        // Capturar coordenadas (puedes obtenerlas al hacer click en el mapa o mediante geocodificación)
+        // Por seguridad o prueba, supongamos coordenadas por defecto o capturadas en variables 'latActual' y 'lngActual'
+        if (!window.latActual || !window.lngActual) {
+            alert("Por favor, selecciona una ubicación en el mapa haciendo click primero.");
+            return;
+        }
+
+        try {
+            // Documento estructurado para subir a Firestore
+            const nuevoPuesto = {
+                nombre: nombreVal,
+                direccion: direccionVal,
+                descripcion: descVal,
+                tipoContacto: tipoContactoVal,
+                datoContacto: datoContactoVal,
+                lat: window.latActual,
+                lng: window.lngActual,
+                bloqueado: false,
+                fechaCreacion: new Date().toISOString()
+            };
+
+            // Enviar a Firebase
+            await addDoc(puestosRef, nuevoPuesto);
+            
+            // Resetear el formulario y cerrar
+            document.getElementById('poke-form').reset();
+            document.getElementById('poke-form').style.display = 'none';
+            
+            mostrarToast("¡Puesto publicado con éxito!");
+        } catch (error) {
+            console.error("Error al guardar en Firebase:", error);
+            alert("Hubo un error al guardar el puesto público.");
+        }
+    };
+
+    // ==========================================
+    // FUNCIÓN: ELIMINAR O BAJAR UN PUESTO
+    // ==========================================
+    window.eliminarPuesto = async function(idDoc) {
+        if (confirm("¿Estás seguro de que deseas eliminar este puesto público?")) {
+            try {
+                const docEspecifico = doc(db, "puestos", idDoc);
+                await deleteDoc(docEspecifico);
+                mostrarToast("Puesto eliminado permanentemente.");
+            } catch (error) {
+                console.error("Error al eliminar:", error);
+            }
+        }
+    };
+
+    // ==========================================
+    // FUNCIONES AUXILIARES (LÓGICA INTERNA DE LA APP)
+    // ==========================================
+    function obtenerClaseRedSocial(tipo) {
+        switch(tipo.toLowerCase()) {
+            case 'whatsapp': return 'contact-whatsapp';
+            case 'telegram': return 'contact-telegram';
+            case 'instagram': return 'contact-instagram';
+            case 'x': return 'contact-x';
+            default: return 'contact-oculto';
+        }
+    }
+
+    function mostrarToast(mensaje) {
+        // Tu lógica actual para mostrar avisos estilo Toast
+        console.log("NOTIFICACIÓN:", mensaje);
+    }
+
+    // Escuchar el evento click en el mapa para capturar las coordenadas de inserción
+    map.on('click', function(e) {
+        window.latActual = e.latlng.lat;
+        window.lngActual = e.latlng.lng;
+        // Opcional: mostrar el formulario de vendedor si está en modo vendedor
+        if(document.getElementById('poke-form')) {
+            document.getElementById('poke-form').style.display = 'block';
+            document.getElementById('input-direccion').value = `Coords: ${window.latActual.toFixed(4)}, ${window.lngActual.toFixed(4)}`;
+        }
+    });
+</script>
+</body>
+</html>

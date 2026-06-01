@@ -107,9 +107,10 @@
       margin-bottom: 0;
     }
 
-    /* Panel Lateral */
+    /* Panel Lateral con Scroll Habilitado */
     #sidebar {
       width: 380px;
+      min-width: 380px;
       background: white;
       padding: 20px;
       display: flex;
@@ -117,6 +118,8 @@
       box-shadow: 4px 0 20px rgba(0,0,0,0.05);
       z-index: 1000;
       border-right: 1px solid #e2e8f0;
+      overflow-y: auto; /* Permite hacer scroll hacia abajo sin problemas */
+      height: 100vh;
     }
     .header {
       text-align: center;
@@ -320,8 +323,7 @@
     }
     #puntos-list {
       list-style: none;
-      overflow-y: auto;
-      flex-grow: 1;
+      margin-bottom: 15px;
     }
     #puntos-list li {
       padding: 15px;
@@ -486,6 +488,7 @@
       border-radius: 6px;
       padding: 15px;
       margin-top: 15px;
+      margin-bottom: 20px;
       display: none;
     }
     #panel-vendedor h3 {
@@ -545,6 +548,23 @@
       display: flex;
       align-items: center;
       gap: 12px;
+    }
+
+    /* RESPONSIVE INTELIGENTE PARA MÓVILES (Evita tapar el mapa) */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column-reverse; /* El mapa queda arriba y los paneles abajo */
+      }
+      #sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: 50vh !important; /* Comparte pantalla al 50% de forma limpia */
+        border-right: none;
+        border-top: 1px solid #e2e8f0;
+      }
+      #map {
+        height: 50vh !important;
+      }
     }
   </style>
 </head>
@@ -617,11 +637,7 @@
       </form>
     </div>
 
-    <!-- PUESTOS EN LISTA -->
-    <h3 class="lista-titulo">Puntos en la Zona</h3>
-    <ul id="puntos-list"></ul>
-
-    <!-- PANEL GESTIÓN VENDEDOR -->
+    <!-- PANEL GESTIÓN VENDEDOR (Se mantiene fijo en su sitio original para que bajes con el scroll) -->
     <div id="panel-vendedor">
       <h3>Mis Puntos Creados</h3>
       <table class="tabla-puestos">
@@ -637,6 +653,10 @@
         </tbody>
       </table>
     </div>
+
+    <!-- PUESTOS EN LISTA -->
+    <h3 class="lista-titulo">Puntos en la Zona</h3>
+    <ul id="puntos-list"></ul>
 
     <button class="btn-cambiar-modo" onclick="cambiarModo()">🔄 Cambiar de Modo / Salir</button>
   </div>
@@ -827,11 +847,9 @@
 
     function actualizarContadorUsuariosActivos(totalPuntos) {
       const horasTranscurridas = 160 - horasRestantesGlobal;
-      // Empieza por 11 siempre y se le suman 12 cada hora transcurrida
       const extrasPorHora = Math.floor(horasTranscurridas * 12);
       const totalCalculado = 11 + totalPuntos + extrasPorHora;
 
-      // Cuando supere los 100, muestra permanentemente "+ 99"
       if (totalCalculado > 100) {
         document.getElementById('total-activos-valor').textContent = "+ 99";
       } else {
@@ -902,6 +920,7 @@
       }
 
       if (!map) initMap();
+      setTimeout(() => { if (map) map.invalidateSize(); }, 200);
     };
 
     window.cambiarModo = function() {
@@ -971,7 +990,6 @@
       }
     }
 
-    // Cuenta atrás fija sin reinicio (se congela en 00:00:00 al terminar)
     function inicializarCountdown() {
       let tiempoTotalSegundos = 160 * 3600; 
 
@@ -987,10 +1005,9 @@
         horasRestantesGlobal = horas; 
 
         document.getElementById('cd-horas').textContent = horas.toString().padStart(2, '0');
-        document.getElementById('cd-minutos').textContent = minutes.toString().padStart(2, '0');
+        document.getElementById('cd-minutos').textContent = minutos.toString().padStart(2, '0');
         document.getElementById('cd-segundos').textContent = segundos.toString().padStart(2, '0');
         
-        // Ejecutar recálculo de activos para reflejar los cambios por hora
         actualizarContadorUsuariosActivos(Object.keys(marcadores).length);
 
         if (tiempoTotalSegundos > 0) {

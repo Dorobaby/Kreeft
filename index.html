@@ -1,92 +1,1027 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Servicio No Disponible</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kreeft Free</title>
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+    body {
+      display: flex;
+      height: 100vh;
+      background-color: #f8f9fa;
+      position: relative;
+      color: #2d3748;
+    }
+    /* Pantallas de Bienvenida (Modal flotante) */
+    .modal-screen {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(45, 55, 72, 0.9);
+      z-index: 9999;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .auth-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+      width: 90%;
+      max-width: 460px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+      border-top: 6px solid #2f855a;
+    }
+    .auth-box h1 {
+      color: #2d3748;
+      margin-bottom: 12px;
+      font-size: 2rem;
+      font-weight: 700;
+    }
+    .auth-box p {
+      color: #718096;
+      margin-bottom: 25px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    /* Botones de Rol */
+    .btn-role {
+      display: block;
+      width: 100%;
+      padding: 18px 20px;
+      margin: 15px 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: transform 0.1s, background 0.2s;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+    .btn-role:active {
+      transform: scale(0.98);
+    }
+    .btn-comprar { background: #2b6cb0; color: white; }
+    .btn-comprar:hover { background: #2c5282; }
+    .btn-vender { background: #2f855a; color: white; }
+    .btn-vender:hover { background: #22543d; }
 
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background-color: #f4f7f5;
-            color: #2d3748;
-            padding: 20px;
-        }
+    /* Cuadro Informativo de Seguridad en Bienvenida */
+    .info-seguridad-box {
+      margin-top: 25px;
+      padding: 15px;
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      text-align: left;
+    }
+    .txt-seguro-verde {
+      color: #276749;
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .txt-alerta-rojo {
+      color: #9b2c2c;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      font-weight: 500;
+      margin-bottom: 4px;
+    }
+    .txt-alerta-rojo:last-child {
+      margin-bottom: 0;
+    }
 
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            text-align: center;
-            max-width: 500px;
-            width: 100%;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-            border-top: 6px solid #2f855a;
-        }
+    /* Panel Lateral con Scroll Habilitado */
+    #sidebar {
+      width: 380px;
+      min-width: 380px;
+      background: white;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 4px 0 20px rgba(0,0,0,0.05);
+      z-index: 1000;
+      border-right: 1px solid #e2e8f0;
+      overflow-y: auto; /* Permite hacer scroll hacia abajo sin problemas */
+      height: 100vh;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #edf2f7;
+      padding-bottom: 15px;
+    }
+    .header h2 {
+      color: #2d3748;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .badge.comprar { background: #2b6cb0; }
+    .badge.vender { background: #2f855a; }
 
-        .icon {
-            font-size: 3rem;
-            margin-bottom: 20px;
-        }
+    .panel-activos {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #edf2f7;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      color: #2d3748;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .panel-activos .activo-label {
+      color: #4a5568;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .panel-activos .activo-valor {
+      background: #2f855a;
+      color: white;
+      min-width: 38px;
+      text-align: center;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
 
-        h1 {
-            font-size: 1.8rem;
-            color: #2d3748;
-            margin-bottom: 15px;
-            font-weight: 600;
-        }
+    /* Contador Countdown */
+    .contenedor-countdown {
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 10px;
+      text-align: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border: 1px solid #4a5568;
+    }
+    .countdown-titulo {
+      font-size: 0.9rem;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      color: #ed8936;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .countdown-reloj {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      font-family: monospace;
+    }
+    .countdown-bloque {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .countdown-numero {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(255,255,255,0.08);
+      padding: 4px 10px;
+      border-radius: 6px;
+      min-width: 55px;
+    }
+    .countdown-etiqueta {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      color: #a0aec0;
+      margin-top: 4px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
 
-        p {
-            color: #718096;
-            font-size: 1rem;
-            line-height: 1.6;
-            margin-bottom: 25px;
-        }
+    /* Alerta de código generado */
+    #codigo-alerta {
+      background: #fffaf0;
+      border: 1px solid #feebc8;
+      border-left: 4px solid #dd6b20;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      display: none;
+    }
+    #codigo-alerta p { font-size: 0.8rem; color: #7b341e; margin-bottom: 4px; }
+    #codigo-alerta strong { font-size: 1.1rem; color: #dd6b20; letter-spacing: 1px; }
 
-        .event-card {
-            background-color: #f0fff4;
-            border: 1px solid #c6f6d5;
-            padding: 20px;
-            border-radius: 8px;
-        }
+    /* Formulario de registro (Vendedor) */
+    #poke-form {
+      background: #f7fafc;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px;
+      display: none;
+    }
+    #poke-form h3 {
+      font-size: 1rem;
+      margin-bottom: 12px;
+      color: #2d3748;
+    }
+    .input-group {
+      margin-bottom: 12px;
+    }
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      color: #4a5568;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .input-group input, .input-group textarea, .input-group select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 4px;
+      font-size: 0.95rem;
+      background-color: white;
+      color: #2d3748;
+    }
 
-        .event-card h2 {
-            font-size: 1.1rem;
-            color: #22543d;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
+    .contacto-container {
+      display: flex;
+      gap: 6px;
+    }
+    .contacto-container select { 
+      width: 40%; 
+      font-weight: 600;
+    }
+    .contacto-container input { width: 60%; }
 
-        .event-card .date {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #2f855a;
-        }
-    </style>
+    button.btn-guardar {
+      width: 100%;
+      background: #2f855a;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.2s;
+      margin-top: 5px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button.btn-guardar:hover { background: #22543d; }
+
+    button.btn-cambiar-modo {
+      background: #edf2f7;
+      border: 1px solid #cbd5e0;
+      color: #4a5568;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      font-weight: 600;
+      width: 100%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    button.btn-cambiar-modo:hover { background: #e2e8f0; }
+
+    /* Lista de Puntos */
+    .lista-titulo {
+      font-size: 1rem;
+      color: #4a5568;
+      margin-bottom: 12px;
+      border-bottom: 2px solid #edf2f7;
+      padding-bottom: 6px;
+      font-weight: 700;
+    }
+    #puntos-list {
+      list-style: none;
+      margin-bottom: 15px;
+    }
+    #puntos-list li {
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, background 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    #puntos-list li:hover {
+      background: #f7fafc;
+      border-color: #cbd5e0;
+    }
+    #puntos-list h4 {
+      color: #2d3748;
+      font-size: 1rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+      padding-right: 75px;
+    }
+    #puntos-list p {
+      font-size: 0.9rem;
+      color: #4a5568;
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+    .info-contacto {
+      font-size: 0.85rem !important;
+      font-weight: bold;
+      color: white !important;
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      border-radius: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 5px;
+    }
+    .contact-whatsapp { background: #25D366; }
+    .contact-telegram { background: #0088cc; }
+    .contact-instagram { background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%); }
+    .contact-x { background: #000000; }
+
+    .btn-ocultar {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: #edf2f7;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      padding: 6px 10px;
+      color: #4a5568;
+      font-weight: 600;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .btn-ocultar:hover { background: #e2e8f0; color: #e53e3e; }
+
+    /* Estilos del Mapa y Popups */
+    #map {
+      flex-grow: 1;
+      height: 100%;
+    }
+    .custom-popup-content p {
+      margin: 4px 0;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    /* Modal de Contacto */
+    .modal-contacto {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 10000;
+      display: none;
+      justify-content: center;
+      align-items: center;
+    }
+    .modal-contacto.activo { display: flex; }
+    .modal-contacto-contenido {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+    }
+    .modal-contacto-header {
+      margin-bottom: 20px;
+      border-bottom: 2px solid #edf2f7;
+      padding-bottom: 12px;
+    }
+    .modal-contacto-header h3 {
+      color: #2d3748;
+      font-size: 1.3rem;
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .modal-contacto-header p { color: #718096; font-size: 0.9rem; }
+    .modal-contacto-mensaje {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 18px;
+      font-size: 0.95rem;
+      color: #2d3748;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .modal-contacto-info {
+      background: #f0f4ff;
+      border-left: 4px solid #2b6cb0;
+      padding: 14px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      font-size: 0.95rem;
+      color: #2d3748;
+    }
+    .modal-contacto-info strong { display: block; margin-bottom: 5px; color: #2b6cb0; }
+    .modal-contacto-botones { display: flex; gap: 12px; }
+    
+    .btn-copiar {
+      flex: 1;
+      background: #2f855a;
+      color: white;
+      border: none;
+      padding: 15px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-copiar:hover { background: #22543d; }
+    .btn-copiar.copiado { background: #4a5568; }
+    
+    .btn-cerrar-modal {
+      flex: 1;
+      background: #e2e8f0;
+      color: #4a5568;
+      border: none;
+      padding: 15px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: background 0.2s;
+    }
+    .btn-cerrar-modal:hover { background: #cbd5e0; }
+
+    /* Panel de Gestión del Vendedor */
+    #panel-vendedor {
+      background: white;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 15px;
+      margin-bottom: 20px;
+      display: none;
+    }
+    #panel-vendedor h3 {
+      font-size: 1rem;
+      margin-bottom: 10px;
+      color: #2d3748;
+      border-bottom: 1px solid #edf2f7;
+      padding-bottom: 5px;
+      font-weight: 700;
+    }
+    .tabla-puestos {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      text-align: left;
+    }
+    .tabla-puestos th, .tabla-puestos td {
+      padding: 10px 6px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .tabla-puestos th { color: #718096; font-weight: 700; }
+    .codigo-seguridad {
+      background: #f0f4ff;
+      color: #2b6cb0;
+      padding: 4px 8px;
+      border-radius: 3px;
+      font-family: monospace;
+      font-weight: bold;
+      font-size: 0.8rem;
+      letter-spacing: 1px;
+    }
+    .acciones-panel { display: flex; gap: 6px; }
+    .btn-accion {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .btn-borrar { background: #fed7d7; color: #9b2c2c; }
+    .btn-borrar:hover { background: #feb2b2; }
+
+    /* Toast */
+    .toast-notificacion {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: linear-gradient(135deg, #2f855a 0%, #22543d 100%);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+      z-index: 10001;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    /* RESPONSIVE INTELIGENTE PARA MÓVILES (Evita tapar el mapa) */
+    @media (max-width: 768px) {
+      body {
+        flex-direction: column-reverse; /* El mapa queda arriba y los paneles abajo */
+      }
+      #sidebar {
+        width: 100% !important;
+        min-width: 100% !important;
+        height: 50vh !important; /* Comparte pantalla al 50% de forma limpia */
+        border-right: none;
+        border-top: 1px solid #e2e8f0;
+      }
+      #map {
+        height: 50vh !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="icon">📍</div>
-        <h1>Aplicación No Disponible</h1>
-        <p>Le informamos que este mapa y el registro de puntos de venta ya no se encuentran activos.</p>
-        
-        <div class="event-card">
-            <h2>Próximo Evento</h2>
-            <div class="date">Fiestas de San Juan</div>
-            <p style="margin: 5px 0 0 0; font-size: 0.95rem; color: #276749;">Del 22 de Junio al 25 de Junio</p>
-        </div>
+  <!-- PANTALLA DE BIENVENIDA / ROLES -->
+  <div id="welcome-screen" class="modal-screen">
+    <div class="auth-box">
+      <h1>Kreeft Free</h1>
+      <p>Bienvenido. Selecciona cómo deseas interactuar con el mapa de puntos de suministro en tiempo real.</p>
+      <button class="btn-role btn-comprar" onclick="seleccionarRol('comprar')">🔍 Entrar como Comprador</button>
+      <button class="btn-role btn-vender" onclick="seleccionarRol('vender')">📢 Entrar como Vendedor</button>
+      
+      <!-- CUADRO INFORMATIVO DE SEGURIDAD -->
+      <div class="info-seguridad-box">
+        <div class="txt-seguro-verde">🛡️ Sin compartir datos</div>
+        <div class="txt-alerta-rojo">⚠️ No se guarda ningún dato una vez borrado el punto.</div>
+        <div class="txt-alerta-">✨ Esta web lanza actualización cada mes.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PANEL LATERAL -->
+  <div id="sidebar">
+    <div class="header">
+      <h2>Kreeft Free</h2>
+      <span id="user-role-badge" class="badge">Sin Rol</span>
     </div>
 
+    <!-- CONTADOR DE USUARIOS ACTIVOS -->
+    <div class="panel-activos">
+      <span class="activo-label">USUARIOS ACTIVOS:</span>
+      <span id="total-activos-valor" class="activo-valor">11</span>
+    </div>
+
+
+    <!-- ALERTA DE CÓDIGO GENERADO -->
+    <div id="codigo-alerta">
+      <p>⚠️ <strong>¡Guarda este código PIN!</strong> Lo necesitarás obligatoriamente si deseas borrar tu punto más adelante desde tu panel:</p>
+      <div style="text-align: center; margin-top: 10px;">
+        <strong id="codigo-generado">0000</strong>
+      </div>
+    </div>
+
+    <!-- FORMULARIO VENDEDOR -->
+    <div id="poke-form">
+      <h3>📍 Registrar Nuevo Punto</h3>
+      <form id="form-registro-puesto">
+        <div class="input-group">
+          <label>Dirección / Referencia de Ubicación</label>
+          <input type="text" id="dir-puesto" required placeholder="Ej. Esquina Calle Mayor o pulsa en el mapa">
+        </div>
+        <div class="input-group">
+          <label>Descripción / Productos</label>
+          <textarea id="desc-puesto" rows="2" required placeholder="Qué ofreces..."></textarea>
+        </div>
+        <div class="input-group">
+          <label>Contacto para Compradores</label>
+          <div class="contacto-container">
+            <select id="tipo-contacto">
+              <option value="WhatsApp">WhatsApp</option>
+              <option value="Telegram">Telegram</option>
+              <option value="Instagram">Instagram</option>
+              <option value="X">X (Twitter)</option>
+            </select>
+            <input type="text" id="dato-contacto" required placeholder="@usuario o número">
+          </div>
+        </div>
+        <button type="submit" class="btn-guardar">🚀 Publicar Punto</button>
+      </form>
+    </div>
+
+    <!-- PANEL GESTIÓN VENDEDOR (Se mantiene fijo en su sitio original para que bajes con el scroll) -->
+    <div id="panel-vendedor">
+      <h3>Mis Puntos Creados</h3>
+      <table class="tabla-puestos">
+        <thead>
+          <tr>
+            <th>Dirección</th>
+            <th>Código PIN</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-puestos-vendedor">
+          <!-- Dinámico -->
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PUESTOS EN LISTA -->
+    <h3 class="lista-titulo">Puntos en la Zona</h3>
+    <ul id="puntos-list"></ul>
+
+    <button class="btn-cambiar-modo" onclick="cambiarModo()">🔄 Cambiar de Modo / Salir</button>
+  </div>
+
+  <!-- MAPA PRINCIPAL -->
+  <div id="map"></div>
+
+  <!-- MODAL CONTACTO -->
+  <div id="modal-contacto" class="modal-contacto">
+    <div class="modal-contacto-contenido">
+      <div class="modal-contacto-header">
+        <h3>Contactar con el Vendedor</h3>
+        <p>Copia la plantilla predefinida para abrir conversación rápidamente.</p>
+      </div>
+      <div id="mensaje-plantilla" class="modal-contacto-mensaje"></div>
+      <div class="modal-contacto-info">
+        <strong>Medio de contacto oficial:</strong>
+        <span id="info-contacto-vendedor" class="info-contacto"></span>
+      </div>
+      <div class="modal-contacto-botones">
+        <button id="btn-copiar-mensaje" class="btn-copiar" onclick="copiarMensajeContacto()">📋 Copiar Mensaje</button>
+        <button class="btn-cerrar-modal" onclick="cerrarModalContacto()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- LÓGICA DE FIREBASE Y APLICACIÓN -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+    // Credenciales corpuskreeft
+    const firebaseConfig = {
+      apiKey: "AIzaSyBF1EzENKPjt1pZWF3fvOivvygZxl3kggs",
+      authDomain: "corpuskreeft.firebaseapp.com",
+      projectId: "corpuskreeft",
+      storageBucket: "corpuskreeft.firebasestorage.app",
+      messagingSenderId: "47657283384",
+      appId: "1:47657283384:web:43f296f04621282ce49bcd"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let map;
+    let marcadores = {}; 
+    let rolActual = null; 
+    let markerSeleccionado = null;
+    let puestosLocalesVendedor = JSON.parse(localStorage.getItem('mis_puestos_kreeft')) || [];
+    let temporalmenteOcultadosClientes = []; 
+
+    let latSeleccionada = null;
+    let lngSeleccionada = null;
+    let horasRestantesGlobal = 160;
+
+    // Inicializar el Mapa de Leaflet enfocado en Granada, España
+    function initMap() {
+      map = L.map('map').setView([37.1773, -3.5986], 14);
+      
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; OpenStreetMap &copy; CARTO'
+      }).addTo(map);
+
+      map.on('click', function(e) {
+        if (rolActual !== 'vender') return;
+        
+        latSeleccionada = e.latlng.lat;
+        lngSeleccionada = e.latlng.lng;
+
+        if (markerSeleccionado) {
+          markerSeleccionado.setLatLng(e.latlng);
+        } else {
+          markerSeleccionado = L.marker(e.latlng, { draggable: true }).addTo(map);
+          markerSeleccionado.on('dragend', function(evt) {
+            const pos = evt.target.getLatLng();
+            latSeleccionada = pos.lat;
+            lngSeleccionada = pos.lng;
+          });
+        }
+      });
+
+      escucharPuntosDeVenta();
+      inicializarCountdown();
+    }
+
+    function escucharPuntosDeVenta() {
+      onSnapshot(collection(db, "puestos"), (snapshot) => {
+        const listaPuntosHTML = document.getElementById('puntos-list');
+        const tablaVendedorHTML = document.getElementById('tabla-puestos-vendedor');
+        
+        listaPuntosHTML.innerHTML = '';
+        tablaVendedorHTML.innerHTML = '';
+        
+        Object.keys(marcadores).forEach(id => map.removeLayer(marcadores[id]));
+        marcadores = {};
+
+        let totalPuntosBaseDatos = 0;
+
+        snapshot.forEach((docSnap) => {
+          const id = docSnap.id;
+          const punto = docSnap.data();
+
+          totalPuntosBaseDatos++;
+
+          if (rolActual === 'comprar' && temporalmenteOcultadosClientes.includes(id)) {
+            return; 
+          }
+
+          const marker = L.marker([punto.latitud, punto.longitud]).addTo(map);
+          let popupContenido = `
+            <div class="custom-popup-content">
+              <p><b>Dirección:</b> ${punto.direccion}</p>
+              <p><b>Descripción:</b> ${punto.descripcion}</p>
+            </div>
+          `;
+          marker.bindPopup(popupContenido);
+          marcadores[id] = marker;
+
+          const li = document.createElement('li');
+          li.innerHTML = `
+            <h4>${punto.direccion}</h4>
+            <p>${punto.descripcion}</p>
+            <span class="info-contacto ${obtenerClaseRedSocial(punto.tipoContacto)}">
+              ${punto.tipoContacto}: ${punto.datoContacto}
+            </span>
+            <button class="btn-ocultar" id="btn-ocultar-${id}">❌ Ocultar</button>
+          `;
+
+          li.addEventListener('click', (e) => {
+            if (e.target.classList.contains('btn-ocultar')) return;
+            if (marcadores[id]) {
+              map.setView([punto.latitud, punto.longitud], 16);
+              marcadores[id].openPopup();
+            }
+            if (rolActual === 'comprar') {
+              abrirModalContacto(punto);
+            }
+          });
+
+          listaPuntosHTML.appendChild(li);
+
+          const btnOcultar = li.querySelector(`#btn-ocultar-${id}`);
+          btnOcultar.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (rolActual === 'comprar') {
+              temporalmenteOcultadosClientes.push(id);
+              if (marcadores[id]) map.removeLayer(marcadores[id]);
+              li.remove();
+              mostrarToast("Punto ocultado de tu lista.");
+            } else {
+              alert("Para eliminar o gestionar tus puntos permanentemente usa la tabla inferior 'Mis Puntos Creados'.");
+            }
+          });
+
+          if (puestosLocalesVendedor.includes(id)) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td><strong>${punto.direccion}</strong></td>
+              <td><span class="codigo-seguridad">${punto.codigoSeguridad}</span></td>
+              <td class="acciones-panel">
+                <button class="btn-accion btn-borrar" data-id="${id}">🗑️ Borrar</button>
+              </td>
+            `;
+            
+            tr.querySelector('.btn-borrar').addEventListener('click', async () => {
+              const pinIntroducido = prompt("Introduce el código PIN de seguridad de este punto para poder borrarlo:");
+              if (pinIntroducido === punto.codigoSeguridad) {
+                if (confirm("¿Confirmas que quieres borrar este punto de suministro permanentemente?")) {
+                  await deleteDoc(doc(db, "puestos", id));
+                  puestosLocalesVendedor = puestosLocalesVendedor.filter(item => item !== id);
+                  localStorage.setItem('mis_puestos_kreeft', JSON.stringify(puestosLocalesVendedor));
+                  mostrarToast("Punto borrado con éxito.");
+                }
+              } else {
+                alert("El código PIN introducido es incorrecto.");
+              }
+            });
+            tablaVendedorHTML.appendChild(tr);
+          }
+        });
+
+        actualizarContadorUsuariosActivos(totalPuntosBaseDatos);
+      });
+    }
+
+    function actualizarContadorUsuariosActivos(totalPuntos) {
+      const horasTranscurridas = 160 - horasRestantesGlobal;
+      const extrasPorHora = Math.floor(horasTranscurridas * 12);
+      const totalCalculado = 11 + totalPuntos + extrasPorHora;
+
+      if (totalCalculado > 100) {
+        document.getElementById('total-activos-valor').textContent = "+ 99";
+      } else {
+        document.getElementById('total-activos-valor').textContent = totalCalculado;
+      }
+    }
+
+    async function guardarPuesto(e) {
+      e.preventDefault();
+
+      const direccion = document.getElementById('dir-puesto').value;
+      const descripcion = document.getElementById('desc-puesto').value;
+      const tipoContacto = document.getElementById('tipo-contacto').value;
+      const datoContacto = document.getElementById('dato-contacto').value;
+
+      if (!latSeleccionada || !lngSeleccionada) {
+        alert("Por favor, selecciona primero un punto exacto haciendo un clic sobre el mapa.");
+        return;
+      }
+
+      const codigoSeguridad = Math.floor(1000 + Math.random() * 9000).toString();
+
+      try {
+        const nuevoPuesto = {
+          direccion,
+          descripcion,
+          latitud: latSeleccionada,
+          longitud: lngSeleccionada,
+          tipoContacto,
+          datoContacto,
+          codigoSeguridad,
+          fechaCreacion: new Date().toISOString()
+        };
+
+        const docRef = await addDoc(collection(db, "puestos"), nuevoPuesto);
+        
+        puestosLocalesVendedor.push(docRef.id);
+        localStorage.setItem('mis_puestos_kreeft', JSON.stringify(puestosLocalesVendedor));
+
+        document.getElementById('codigo-generado').textContent = codigoSeguridad;
+        document.getElementById('codigo-alerta').style.display = 'block';
+
+        mostrarToast("¡Punto publicado correctamente!");
+        limpiarFormulario();
+      } catch (error) {
+        console.error("Error Firebase: ", error);
+      }
+    }
+
+    // --- MAPEO DE WINDOW GLOBALES ---
+
+    window.seleccionarRol = function(rol) {
+      rolActual = rol;
+      document.getElementById('welcome-screen').style.display = 'none';
+      
+      const badgeRol = document.getElementById('user-role-badge');
+      badgeRol.className = `badge ${rol}`;
+      badgeRol.textContent = rol === 'comprar' ? 'Comprador' : 'Vendedor';
+
+      if (rol === 'vender') {
+        document.getElementById('poke-form').style.display = 'block';
+        document.getElementById('panel-vendedor').style.display = 'block';
+        mostrarToast("Modo Vendedor: Toca el mapa para fijar tu dirección");
+      } else {
+        document.getElementById('poke-form').style.display = 'none';
+        document.getElementById('panel-vendedor').style.display = 'none';
+        document.getElementById('codigo-alerta').style.display = 'none';
+      }
+
+      if (!map) initMap();
+      setTimeout(() => { if (map) map.invalidateSize(); }, 200);
+    };
+
+    window.cambiarModo = function() {
+      document.getElementById('welcome-screen').style.display = 'flex';
+      if (markerSeleccionado) {
+        map.removeLayer(markerSeleccionado);
+        markerSeleccionado = null;
+      }
+      limpiarFormulario();
+    };
+
+    window.cerrarModalContacto = function() {
+      document.getElementById('modal-contacto').classList.remove('activo');
+    };
+
+    window.copiarMensajeContacto = function() {
+      const mensaje = document.getElementById('mensaje-plantilla').textContent;
+      navigator.clipboard.writeText(mensaje).then(() => {
+        const btn = document.getElementById('btn-copiar-mensaje');
+        btn.textContent = "✅ ¡Copiado!";
+        btn.classList.add('copiado');
+        setTimeout(() => {
+          btn.textContent = "📋 Copiar Mensaje";
+          btn.classList.remove('copiado');
+        }, 2000);
+      });
+    };
+
+    // --- AUXILIARES ---
+
+    function abrirModalContacto(punto) {
+      const plantilla = `¡Hola! He visto tu punto de suministro en "${punto.direccion}" a través de Kreeft Free.\n¿Sigue disponible? ¡Me interesa!`;
+      document.getElementById('mensaje-plantilla').textContent = plantilla;
+
+      const badgeCont = document.getElementById('info-contacto-vendedor');
+      badgeCont.className = `info-contacto ${obtenerClaseRedSocial(punto.tipoContacto)}`;
+      badgeCont.textContent = `${punto.tipoContacto}: ${punto.datoContacto}`;
+
+      document.getElementById('modal-contacto').classList.add('activo');
+    }
+
+    function obtenerClaseRedSocial(tipo) {
+      switch(tipo?.toLowerCase()) {
+        case 'whatsapp': return 'contact-whatsapp';
+        case 'telegram': return 'contact-telegram';
+        case 'instagram': return 'contact-instagram';
+        case 'x': return 'contact-x';
+        default: return 'contact-oculto';
+      }
+    }
+
+    function mostrarToast(mensaje) {
+      const toast = document.createElement('div');
+      toast.className = 'toast-notificacion';
+      toast.innerHTML = `<span>🔔</span> <p>${mensaje}</p>`;
+      document.body.appendChild(toast);
+      setTimeout(() => { toast.remove(); }, 3000);
+    }
+
+    function limpiarFormulario() {
+      document.getElementById('form-registro-puesto').reset();
+      latSeleccionada = null;
+      lngSeleccionada = null;
+      if (markerSeleccionado) {
+        map.removeLayer(markerSeleccionado);
+        markerSeleccionado = null;
+      }
+    }
+
+    function inicializarCountdown() {
+      let tiempoTotalSegundos = 160 * 3600; 
+
+      function desglosarTiempo() {
+        if (tiempoTotalSegundos <= 0) {
+          tiempoTotalSegundos = 0; 
+        }
+
+        const horas = Math.floor(tiempoTotalSegundos / 3600);
+        const minutos = Math.floor((tiempoTotalSegundos % 3600) / 60);
+        const segundos = tiempoTotalSegundos % 60;
+
+        horasRestantesGlobal = horas; 
+
+        document.getElementById('cd-horas').textContent = horas.toString().padStart(2, '0');
+        document.getElementById('cd-minutos').textContent = minutos.toString().padStart(2, '0');
+        document.getElementById('cd-segundos').textContent = segundos.toString().padStart(2, '0');
+        
+        actualizarContadorUsuariosActivos(Object.keys(marcadores).length);
+
+        if (tiempoTotalSegundos > 0) {
+          tiempoTotalSegundos--;
+        }
+      }
+      setInterval(desglosarTiempo, 1000);
+      desglosarTiempo();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const form = document.getElementById('form-registro-puesto');
+      if (form) form.addEventListener('submit', guardarPuesto);
+    });
+  </script>
 </body>
 </html>
